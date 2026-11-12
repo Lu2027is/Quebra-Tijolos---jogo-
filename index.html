@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Bounce - Jogo de Bolinhas</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0b0d17;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      color: #38bdf8;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    }
+
+    #game-container {
+      position: relative;
+      background: #111827;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+
+    canvas {
+      display: block;
+      background: #0f172a;
+    }
+
+    .instrucoes {
+      margin-top: 15px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>NEON BOUNCE: ARCADE</h1>
+  
+  <div id="game-container">
+    <canvas id="gameCanvas" width="480" height="360"></canvas>
+  </div>
+
+  <div class="instrucoes">
+    Use as **setas do teclado (Esquerda / Direita)** para mover a barra e rebater a bolinha!
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Variáveis do jogo
+    let ballRadius = 8;
+    let x = canvas.width / 2;
+    let y = canvas.height - 30;
+    let dx = 3;
+    let dy = -3;
+
+    // Barra do jogador
+    let paddleHeight = 10;
+    let paddleWidth = 75;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+
+    // Controles
+    let rightPressed = false;
+    let leftPressed = false;
+
+    // Blocos
+    let brickRowCount = 4;
+    let brickColumnCount = 6;
+    let brickWidth = 65;
+    let brickHeight = 20;
+    let brickPadding = 10;
+    let brickOffsetTop = 30;
+    let brickOffsetLeft = 25;
+
+    let score = 0;
+    let lives = 3;
+
+    let bricks = [];
+    for (let c = 0; c < brickColumnCount; c++) {
+      bricks[c] = [];
+      for (let r = 0; r < brickRowCount; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 };
+      }
+    }
+
+    // Ouvintes de teclado
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        rightPressed = true;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        leftPressed = true;
+      }
+    }
+
+    function keyUpHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        rightPressed = false;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        leftPressed = false;
+      }
+    }
+
+    // Detecção de colisão com os blocos
+    function collisionDetection() {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          let b = bricks[c][r];
+          if (b.status === 1) {
+            if (
+              x > b.x &&
+              x < b.x + brickWidth &&
+              y > b.y &&
+              y < b.y + brickHeight
+            ) {
+              dy = -dy;
+              b.status = 0;
+              score += 10;
+              if (score === brickRowCount * brickColumnCount * 10) {
+                alert("Parabéns! Você venceu!");
+                document.location.reload();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Desenhar a bola
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Desenhar a barra
+    function drawPaddle() {
+      ctx.beginPath();
+      ctx.rect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
+      ctx.fillStyle = "#ec4899";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Desenhar os blocos
+    function drawBricks() {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          if (bricks[c][r].status === 1) {
+            let brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+            let brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+            bricks[c][r].x = brickX;
+            bricks[c][r].y = brickY;
+            ctx.beginPath();
+            ctx.rect(brickX, brickY, brickWidth, brickHeight);
+            ctx.fillStyle = "#8b5cf6";
+            ctx.fill();
+            ctx.closePath();
+          }
+        }
+      }
+    }
+
+    // Placar e vidas
+    function drawScore() {
+      ctx.font = "14px 'Segoe UI'";
+      ctx.fillStyle = "#f1f5f9";
+      ctx.fillText("Pontos: " + score, 20, 20);
+    }
+
+    function drawLives() {
+      ctx.font = "14px 'Segoe UI'";
+      ctx.fillStyle = "#f1f5f9";
+      ctx.fillText("Vidas: " + lives, canvas.width - 70, 20);
+    }
+
+    // Loop principal de animação do jogo
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBricks();
+      drawBall();
+      drawPaddle();
+      drawScore();
+      drawLives();
+      collisionDetection();
+
+      // Rebater nas paredes laterais
+      if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+        dx = -dx;
+      }
+
+      // Rebater no teto
+      if (y + dy < ballRadius) {
+        dy = -dy;
+      } 
+      // Bater na barra ou cair embaixo
+      else if (y + dy > canvas.height - ballRadius - 10) {
+        if (x > paddleX && x < paddleX + paddleWidth) {
+          dy = -dy;
+        } else {
+          lives--;
+          if (!lives) {
+            alert("Fim de Jogo!");
+            document.location.reload();
+          } else {
+            x = canvas.width / 2;
+            y = canvas.height - 30;
+            dx = 3;
+            dy = -3;
+            paddleX = (canvas.width - paddleWidth) / 2;
+          }
+        }
+      }
+
+      // Movimento da barra
+      if (rightPressed && paddleX < canvas.width - paddleWidth) {
+        paddleX += 5;
+      } else if (leftPressed && paddleX > 0) {
+        paddleX -= 5;
+      }
+
+      x += dx;
+      y += dy;
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+
+</body>
+</html>
